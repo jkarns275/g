@@ -1,0 +1,10 @@
+[package]
+name = "g"
+version = "0.1.0"
+authors = ["jkarn"]
+build = "build.rs"
+
+[dependencies]
+
+[lib]
+crate-type = ["staticlib"]

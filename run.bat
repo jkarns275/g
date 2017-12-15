@@ -1,0 +1,2 @@
+RUST_BACKTRACE = 1
+make run
