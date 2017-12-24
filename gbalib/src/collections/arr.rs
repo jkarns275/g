@@ -1,8 +1,8 @@
 use core::ops::{ Index, IndexMut };
 use core::mem::size_of;
 
-use gbalib::boxed::Ptr;
-use gbalib::alloc::{ alloc, free };
+use boxed::Ptr;
+use alloc::{ alloc, free };
 
 pub struct Arr<T: Sized> {
     ptr: Ptr<T>,

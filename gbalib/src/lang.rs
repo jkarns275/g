@@ -27,3 +27,10 @@ pub extern "C" fn __udivti3(a: u32, b: u32) -> u32 { a / b }
 
 #[no_mangle]
 pub extern "C" fn __umodti3(a: u32, b: u32) -> u32 { a % b }
+
+/// Copies bytes in word-sized chunks.
+///
+#[no_mangle]
+pub unsafe extern fn wordcpy(mut dst: Ptr<u32>, src: Ptr<u32>, len_in_bytes: u32) -> Ptr<u16> {
+    // TODO: translate this from tonc
+}

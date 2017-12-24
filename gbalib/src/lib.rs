@@ -1,0 +1,10 @@
+#![feature(i128_type, asm, lang_items, core, core_intrinsics, const_fn, untagged_unions, arbitrary_self_types)]
+#![no_std]
+
+mod lang;
+pub use lang::*;
+
+pub mod alloc;
+pub mod boxed;
+pub mod collections;
+

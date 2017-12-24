@@ -1,7 +1,7 @@
 use core::{ mem, iter };
 use core::option::*;
 
-use gbalib::boxed::Ptr;
+use boxed::Ptr;
 
 
 // first 8 bytes are used to point to free / used lists
@@ -111,12 +111,18 @@ impl Chunk {
     }
 
     pub unsafe fn append_to_free(mut ptr: Ptr<Chunk>) {
-        let head = Chunk::get_free_head();
+        let mut head = Chunk::get_free_head();
         if ! head.is_null() {
             // Sort the pointers and concatenate the given ptr if any adjacent blocks are found.
             let mut current: Ptr<Chunk> = *head;
-            while !(*current).next.is_null() && current.num < ptr.num {
-                current = (*current).next;
+            if current.num > ptr.num {
+                (*head).num = ptr.num;
+                (*ptr).next.num = current.num;
+                (*ptr).prev = Ptr::null();
+            } else {
+                while !(*current).next.is_null() && current.num < ptr.num {
+                    current = (*current).next;
+                }
             }
 
             let mut current_prev: Ptr<Chunk> = current.prev;
@@ -137,7 +143,6 @@ impl Chunk {
             } else { // Try to concatenate ptr and the following chunk
                 let _ = ptr.try_concatenate(current);
             }
-
         } else {
             Chunk::set_free_head(ptr);
         }
@@ -341,7 +346,7 @@ impl iter::Iterator for ChunkIterator {
 }
 
 pub unsafe fn alloc_initialize() {
-    let mut free_head: Ptr<Ptr<Chunk>> = Chunk::gett_free_head();
+    let mut free_head: Ptr<Ptr<Chunk>> = Chunk::get_free_head();
     (*free_head).num = RAM_START;
     (**free_head).initialize();
     (**free_head).len = RAM_END - RAM_START - mem::size_of::<Chunk>() as u32;
@@ -366,7 +371,6 @@ pub unsafe fn free<T: Sized>(ptr: &mut Ptr<T>) {
     if ptr.is_null() {
         return;
     } else {
-        return;
         let mut chunk: Ptr<Chunk> = Ptr::<Chunk>::from_u32(ptr.num - (mem::size_of::<Chunk>() as u32));
         (*chunk).remove_from_used_list();
         Chunk::append_to_free(chunk);
