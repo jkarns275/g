@@ -1,4 +1,4 @@
-use boxed::ptr::*;
+use boxed::Ptr;
 use core::mem;
 
 const VRAM: Ptr<u32> = Ptr::from_u32(0x06000000);
@@ -12,25 +12,25 @@ const OAM: Ptr<u32> = Ptr::from_u32(0x07000000);
 #[repr(u16)]
 pub enum SpriteMode {
     /// Enables normal sprite rendering
-    NormalSprite    = 0x0000_u16,
+    Normal      = 0x0000_u16,
 
     /// Enables alpha blending
-    AlphaSprite     = 0x0400_u16,
+    Alpha       = 0x0400_u16,
 
     /// As per TONC: "Object is part of the object window. The sprite itself isn't rendered, but
     /// serves as a mask for bgs and other sprites. (I think, haven't used it yet)"
-    Masked          = 0x0800_u16,
+    Masked      = 0x0800_u16,
 
     /// This value is invalid / unused, but is here so it can be used if someone is interested in
     /// testing it.
-    Forbidden       = 0x0C00_u16
+    Forbidden   = 0x0C00_u16
 }
 
 #[derive(Copy, Clone)]
 #[repr(u16)]
 pub enum AffineMode {
     /// Enables normal affine rendering
-    NormalAffine    = 0x0000_u16,
+    Normal    = 0x0000_u16,
 
     /// Sprite is an affine sprite and uses the specified affine matrix
     Affine          = 0x0100_u16,
@@ -72,7 +72,6 @@ pub enum SpriteDimensions {
 impl SpriteDimensions {
 
     pub const fn into_tuple(self) -> (u16, u16) {
-        let p = self as u32;
         ((self as u32 >> 16) as u16, self as u32 as u16)
     }
 
@@ -91,10 +90,11 @@ impl SpriteDimensions {
 pub enum SpritePriority {
     Last            = 0x0000_u16,
     Background      = 0x0400_u16,
-    Foreground      = 0x0C00_u16,
+    Foreground      = 0x0800_u16,
     First           = 0x0C00_u16,
 }
 
+#[derive(Copy, Clone)]
 pub struct SpriteAttributes {
     /// Attribute 0 (attribute_0)
     a0: u16,
@@ -112,40 +112,40 @@ impl SpriteAttributes {
     /// All masks used for attribute_0
 
     /// The 8 bits that are used to set the Y coordinate of the sprite in attribute_0
-    const Y_COORD_MASK: u8          = 0x00FF_u16;
+    const Y_COORD_MASK: u16         = 0x00FF_u16;
     /// The two bits that determine the what affine is used for this sprite; located in attribute_0
-    const AFFINE_MODE_MASK: u8      = 0x0300_u16;
+    const AFFINE_MODE_MASK: u16     = 0x0300_u16;
     /// The two bits that determine the what special effects are enabled for this sprite; located in
     /// attribute_0
-    const SPRITE_MODE_MASK: u8      = 0x0C00_u16;
+    const SPRITE_MODE_MASK: u16     = 0x0C00_u16;
     /// If this bit is set to 1 in attribute_0, then mosaic effects are enabled
-    const MOSAIC_MASK: u8           = 0x1000_u16;
+    const MOSAIC_MASK: u16         = 0x1000_u16;
     /// The bit that determine what color mode is used in attribute_0. If it is 0, then it is 4bpp
     /// (16 color), otherwise it is 8bpp (256 colors).
-    const COLOR_MODE_MASK: u8       = 0x2000_u16;
+    const COLOR_MODE_MASK: u16       = 0x2000_u16;
     /// The first attribute that determines the dimensions of the sprite, in attribute_0 (first element
     /// in the tuple from SpriteDimensions).
-    const SPRITE_SHAPE_MASK: u8     = 0xC000_u16;
+    const SPRITE_SHAPE_MASK: u16     = 0xC000_u16;
 
     /// All masks used for attribute_1
 
     /// The 9 (yes 9) bits that are used to set the X coordinate of the sprite in attribute_1
-    const X_COORD_MASK: u8          = 0x01FF_u16;
+    const X_COORD_MASK: u16          = 0x01FF_u16;
     /// The affine index bits in attribute_1. Should only be set if AFFINE_MODE is set to Affine
-    const AFFINE_INDEX_MASK: u8     = 0x3E00_u16;
+    const AFFINE_INDEX_MASK: u16     = 0x3E00_u16;
     /// The bit to be set if this sprite should be horizontally flipped, in attribute_1.
-    const HORIZONTAL_FLIP_MASK: u8  = 0x1000_u16;
+    const HORIZONTAL_FLIP_MASK: u16  = 0x1000_u16;
     /// The bit to be set if this sprite should be vertically flipped, in attribute_1.
-    const VERTICAL_FLIP_MASK: u8    = 0x2000_u16;
+    const VERTICAL_FLIP_MASK: u16    = 0x2000_u16;
     /// The second attribute that determines the dimensions of the sprite, in attribute_1 (second
     /// element in the tuple from SpriteDimensions)
-    const SPRITE_SIZE_MASK: u8      = 0xC000_u16;
+    const SPRITE_SIZE_MASK: u16     = 0xC000_u16;
 
     /// All masks used for attribute_2
 
-    const TILE_INDEX_MASK: u8       = 0x03FF_u16;
-    const PRIORITY_MASK: u8         = 0x0C00_u16;
-    const PALETTE_BANK_INDEX_MASK: u8    = 0xF000_u16;
+    const TILE_INDEX_MASK: u16          = 0x03FF_u16;
+    const PRIORITY_MASK: u16            = 0x0C00_u16;
+    const PALETTE_BANK_INDEX_MASK: u16  = 0xF000_u16;
 
     pub fn default() -> Self { SpriteAttributes { a0: 0, a1: 0, a2: 0, filler: 0 } }
 
@@ -163,7 +163,7 @@ impl SpriteAttributes {
         result.set_color_mode(color_mode);
         result.set_affine_mode(affine_mode);
         result.set_sprite_mode(sprite_mode);
-        result.set_mosaic_enbled(mosaic_enabled);
+        result.set_mosaic_enabled(mosaic_enabled);
         result.set_vertically_flipped(vertical_flipped);
         result.set_palette_bank_index(palette_bank_index);
         result.set_horizontally_flipped(horizontal_flipped);
@@ -247,6 +247,7 @@ impl SpriteAttributes {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct SpriteAffine {
     fill0: [u16; 3],
     pa: i16,

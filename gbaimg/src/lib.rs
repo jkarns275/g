@@ -93,7 +93,7 @@ pub fn img_as_palleted_sprite_4bpp(input: TokenStream) -> TokenStream {
             }
         }
     }
-
+    println!("{:?}\n\n{:?}", colors, pixels);
     (quote! { (&#colors, &#pixels) }).parse().unwrap()
 }
 

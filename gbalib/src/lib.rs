@@ -7,4 +7,5 @@ pub use lang::*;
 pub mod alloc;
 pub mod boxed;
 pub mod collections;
-
+pub mod mem;
+pub mod graphics;

@@ -165,7 +165,7 @@ impl Chunk {
     }
 
     #[inline(always)]
-    pub unsafe fn as_gba_ptr(&mut self) -> Ptr<Chunk> { Ptr::from_ref_mut(self) }
+    pub unsafe fn as_gba_ptr(&mut self) -> Ptr<Chunk> { Ptr::from_mut_ref(self) }
 
     #[inline(always)]
     pub unsafe fn as_ptr(&self) -> * const Chunk { mem::transmute::<&Chunk, * const Chunk>(self) }
@@ -292,7 +292,7 @@ impl Chunk {
                     if !self.next.is_null() {
                         self.next.prev = new_chunk;
                     }
-                    new_chunk.prev = Ptr::<Chunk>::from_ref_mut(self);
+                    new_chunk.prev = Ptr::<Chunk>::from_mut_ref(self);
 
                     // New chunk will have any remaining space that is in this chunk
                     new_chunk.len = remaining_space;

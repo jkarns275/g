@@ -7,7 +7,6 @@ use alloc::{ alloc, free };
 pub struct Arr<T: Sized> {
     ptr: Ptr<T>,
     len: u32,
-    index: u32
 }
 
 impl<T: Sized> Arr<T> {
@@ -17,7 +16,6 @@ impl<T: Sized> Arr<T> {
             Arr {
                 ptr: data_ptr,
                 len: len * size_of::<T>() as u32,
-                index: 0
             }
         }
     }
@@ -39,7 +37,7 @@ impl<Item, Ind> Index<Ind> for Arr<Item>
     fn index(&self, index: Ind) -> &Item {
         let i: u32 = index.into();
         unsafe {
-            let x =Ptr::<Item>::from_u32(self.ptr.num + i * size_of::<Item>() as u32);
+            let x = Ptr::<Item>::from_u32(self.ptr.num + i * size_of::<Item>() as u32);
             let y: &mut Item;
             asm!("mov $0, $1"
             : "=&r" (y)
