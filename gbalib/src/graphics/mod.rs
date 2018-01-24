@@ -149,6 +149,7 @@ impl GraphicsMode {
         reg |= self.hblank_policy as u16;
         reg |= self.sprite_windows_enabled as u16;
         reg |= self.display_state as u16;
+        reg |= self.sprite_storage_mode as u16;
 
         let bg0 = if self.bg0_enabled { GraphicsMode::BG0_MASK } else { 0 };
         let bg1 = if self.bg1_enabled { GraphicsMode::BG1_MASK } else { 0 };
@@ -160,7 +161,8 @@ impl GraphicsMode {
         let sprite_windows = if self.sprite_windows_enabled { GraphicsMode::SPRITE_WINDOWS_MASK} else { 0 };
 
         reg |= bg0 | bg1 | bg2 | bg3 | sprites | window0 | window1 | sprite_windows;
-
+        let mut p = Ptr::<u32>::from_u32(0x03000000);
+        *p = reg as u32;
         unsafe { *(GraphicsMode::GRAPHICS_MODE_ADDR) = reg; }
     }
 

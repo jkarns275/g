@@ -13,7 +13,7 @@ use gbalib::graphics::*;
 
 //#[macro_use]
 extern crate gbaimg;
-use gbaimg::img_as_palleted_sprite_4bpp;
+use gbaimg::*;
 
 use core::intrinsics::volatile_store;
 use core::*;
@@ -58,8 +58,8 @@ fn oam_init(obj: Ptr<SpriteAttributes>, mut count: u32) {
 }
 
 pub struct GbaSprite(&'static [u16], &'static [u8]) ;
-static pal: (&'static [u16], &'static [u8]) = img_as_palleted_sprite_4bpp!("wow.png");
-
+static pal: (&'static [u16], &'static [u8]) = img_as_palleted_sprite_8bpp!("wow.png");
+static alt_pal: &'static [u16] = &[0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFF,0,0,0,0,0,0,0,0,0,];
 const obj_buffer: StaticArr<SpriteAttributes> = StaticArr::new(Ptr::from_u32(0x07000000), 128);
 const obj_affine: StaticArr<SpriteAffine> = StaticArr::new(Ptr::from_u32(0x07000000), 32);
 
@@ -71,16 +71,37 @@ const sprite_pal: StaticArr<u16> = StaticArr::new(Ptr::from_u32(0x05000200), 256
 pub unsafe extern "C" fn main(_: i32, _: *const *const i8) -> i32 {
     let mut config = GraphicsMode::from_u16(0);
     config.sprites_enabled = true;
-    config.sprite_storage_mode = SpriteStorageMode::_1D;
+    config.sprite_storage_mode = SpriteStorageMode::_2D;
     config.set();
 
-    memcpy(Ptr::from_ref(&tile_mem[4][0]), Ptr::from_ptr(pal.1.as_ptr()), 10);
+    let mut ptr = Ptr::<u32>::from_u32(0x04000000);
+    let mut debugptr = Ptr::<u32>::from_u32(0x03000000);
+
     memcpy(sprite_pal.as_ptr(), Ptr::from_ptr(pal.0.as_ptr()), pal.0.len() as u32);
+
+    let mut sprite = Ptr::from_ref(&tile_mem[4][0]).transmute::<u32>();
+    let sprite_src = Ptr::from_ptr(pal.1.as_ptr()).transmute::<u32>();
+
+    memcpy(sprite, sprite_src, pal.1.len() as u32 / 4);
 
     let mut sprite = &mut obj_buffer[0];
     sprite.set_dimensions(SpriteDimensions::_64x64);
-    sprite.set_color_mode(ColorMode::_4bpp);
+    sprite.set_color_mode(ColorMode::_8bpp);
     sprite.set_sprite_mode(SpriteMode::Normal);
+    sprite.set_affine_mode(AffineMode::Normal);
+    sprite.set_x(0);
+    sprite.set_y(0);
+    sprite.set_tile_index(8);
+
+    let mut sprite2 = &mut obj_buffer[2];
+    sprite2.set_dimensions(SpriteDimensions::_64x32);
+    sprite2.set_color_mode(ColorMode::_8bpp);
+    sprite2.set_sprite_mode(SpriteMode::Normal);
+    sprite2.set_affine_mode(AffineMode::Normal);
+    sprite2.set_x(64);
+    sprite2.set_y(0);
+    sprite2.set_tile_index(8);
+
 
     loop {}
 }

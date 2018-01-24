@@ -1,5 +1,6 @@
 use boxed::Ptr;
 use core::mem;
+use collections::Arr;
 
 const VRAM: Ptr<u32> = Ptr::from_u32(0x06000000);
 const OAM: Ptr<u32> = Ptr::from_u32(0x07000000);
@@ -105,7 +106,7 @@ pub struct SpriteAttributes {
     /// Attribute 2 (attribute_2)
     a2: u16,
     /// Filler to make the struct word aligned
-    filler: u16
+    pub filler: u16
 }
 
 impl SpriteAttributes {
@@ -258,4 +259,3 @@ pub struct SpriteAffine {
     fill3: [u16; 3],
     pd: i16
 }
-

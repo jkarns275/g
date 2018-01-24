@@ -58,42 +58,70 @@ pub fn img_as_palleted_sprite_4bpp(input: TokenStream) -> TokenStream {
     }
 
     let mut pixels =  vec![0u8; (width * height) as usize >> 1];
+    let mut index = 0usize;
+    for iy in 0..height / 8 {
+        for ix in 0..width / 8 {
+            for y in (0..8) {
+                //println!("");
+                for x in (0..8) {
+                    let rgb = img.get_pixel(ix * 8 + x, iy * 8 + y).data;
+                    //print!("Pixel at ({}, {}): {:?}; ", ix * 8 + x, iy * 8 + y, rgb);
+                    let converted_red = ((rgb[0] as f32 / 255.0f32) * 31.0f32) as u16;
+                    let converted_green = ((rgb[1] as f32 / 255.0f32) * 31.0f32) as u16;
+                    let converted_blue = ((rgb[2] as f32 / 255.0f32) * 31.0f32) as u16;
 
-    for iy in 0..height {
-        for ix in 0..width {
-            let rgb = img.get_pixel(ix, iy).data;
+                    let color = (converted_blue << 10) | (converted_green << 5) | converted_red;
+                    let color_index =
+                        if let Some(color_index) = colors.iter().position(|&item| item == color) {
+                            if color_index > 15 {
+                                panic!("image contains more than 16 colors: a 4bpp image can only have 16 colors");
+                            }
+                            color_index
+                        } else {
+                            let color_index = colors.len();
+                            if color_index == 16 {
+                                panic!("image contains more than 16 colors: a 4bpp image can only have 16 colors");
+                            }
 
-            let converted_red = ((rgb[0] as f32 / 255.0f32) * 31.0f32) as u16;
-            let converted_green = ((rgb[1] as f32 / 255.0f32) * 31.0f32) as u16;
-            let converted_blue = ((rgb[2] as f32 / 255.0f32) * 31.0f32) as u16;
-
-            let color = (converted_blue << 10) | (converted_green << 5) | converted_red;
-            let color_index =
-                if let Some(color_index) = colors.iter().position(|&item| item == color) {
-                    if color_index > 15 {
-                        panic!("image contains more than 16 colors: a 4bpp image can only have 16 colors");
+                        colors.push(color);
+                        color_index
+                    };
+                    if index & 1 == 0 {
+                        pixels[index >> 1] |= color_index as u8;
+                    } else {
+                        pixels[index >> 1] |= (color_index << 4) as u8;
                     }
-                    color_index
-                } else {
-                    let color_index = colors.len();
-                    if color_index == 16 {
-                        panic!("image contains more than 16 colors: a 4bpp image can only have 16 colors");
-                    }
-
-                    colors.push(color);
-                    color_index
-                };
-
-            let nibble_index = (iy * width + ix) as usize;
-            let byte_index = nibble_index >> 1;
-            if nibble_index & 1 == 0 {
-                pixels[byte_index] |= color_index as u8;
-            } else {
-                pixels[byte_index] |= (color_index << 4) as u8;
+                    println!("{}", index);
+                    index += 1;
+                }
             }
+
         }
     }
-    println!("{:?}\n\n{:?}", colors, pixels);
+
+    let mut newln = 0;
+    print!("palette: {{ ");
+    for x in colors.iter() {
+        if newln == 16 {
+            newln = 0;
+            println!("");
+        }
+        print!("{:x}, ", x);
+        newln += 1;
+    }
+    newln = 0;
+    println!("}}\nimg: ");
+    for x in pixels.iter() {
+        if newln == 32 {
+            newln = 0;
+            println!("");
+        }
+        print!("{:02x}, ", x);
+        newln += 1;
+    }
+    println!("}}");
+
+    //pixels.reverse();
     (quote! { (&#colors, &#pixels) }).parse().unwrap()
 }
 
@@ -109,38 +137,42 @@ pub fn img_as_palleted_sprite_8bpp(input: TokenStream) -> TokenStream {
         panic!("image must have an even number of pixels in order to convert it to 4bpp")
     }
 
-    let mut pixels =  vec![0u8; (width * height) as usize];
+    let mut pixels = vec![0u8; (width * height) as usize];
+    let mut index = 0usize;
+    for iy in 0..height / 8 {
+        for ix in 0..width / 8 {
+            for y in (0..8) {
+                //println!("");
+                for x in (0..8) {
+                    let rgb = img.get_pixel(ix * 8 + x, iy * 8 + y).data;
+                    //print!("Pixel at ({}, {}): {:?}; ", ix * 8 + x, iy * 8 + y, rgb);
+                    let converted_red = ((rgb[0] as f32 / 255.0f32) * 31.0f32) as u16;
+                    let converted_green = ((rgb[1] as f32 / 255.0f32) * 31.0f32) as u16;
+                    let converted_blue = ((rgb[2] as f32 / 255.0f32) * 31.0f32) as u16;
 
-    for iy in 0..height {
-        for ix in 0..width {
-            let rgb = img.get_pixel(ix, iy).data;
+                    let color = (converted_blue << 10) | (converted_green << 5) | converted_red;
+                    let color_index =
+                        if let Some(color_index) = colors.iter().position(|&item| item == color) {
+                            if color_index > (1 << 8) - 1 {
+                                panic!("image contains more than 256 colors: a 8bpp image can only have 256 colors");
+                            }
+                            color_index
+                        } else {
+                            let color_index = colors.len();
+                            if color_index == 1 << 8 {
+                                panic!("image contains more than 256 colors: a 8bpp image can only have 256 colors");
+                            }
+                            colors.push(color);
+                            color_index
+                    };
+                    pixels[index] |= color_index as u8;
+                    index += 1;
+                }
+            }
 
-            let converted_red = ((rgb[0] as f32 / 255.0f32) * 31.0f32) as u16;
-            let converted_green = ((rgb[1] as f32 / 255.0f32) * 31.0f32) as u16;
-            let converted_blue = ((rgb[2] as f32 / 255.0f32) * 31.0f32) as u16;
-
-            let color = (converted_blue << 10) | (converted_green << 5) | converted_red;
-            let color_index =
-                if let Some(color_index) = colors.iter().position(|&item| item == color) {
-                    if color_index > 15 {
-                        panic!("image contains more than 16 colors: a 4bpp image can only have 16 colors");
-                    }
-                    color_index
-                } else {
-                    let color_index = colors.len();
-                    if color_index == 16 {
-                        panic!("image contains more than 16 colors: a 4bpp image can only have 16 colors");
-                    }
-
-                    colors.push(color);
-                    color_index
-                };
-
-            let byte_index = iy * width + ix;
-            pixels[byte_index as usize] = color_index as u8;
         }
     }
-
+    println!("{:?}", pixels);
     (quote! { (&#colors, &#pixels) }).parse().unwrap()
 }
 

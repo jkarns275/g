@@ -12,8 +12,12 @@ pub unsafe fn memcpy<T: Sized>(dst: Ptr<T>, src: Ptr<T>, items: u32) -> Ptr<T> w
 
     let mut len = items * (size_of::<T>() as u32);
 
+    let mut p = Ptr::<u32>::from_u32(0x03000004);
+    *p = 0;
+
     // Copy data 4 words at a time - except for the tail, which is 0, 1, 2, or 3 words
      if (src.num | dst.num) & 4 == 0 && len >= 4 {
+         *p = 1;
          let mut src32 = src.transmute::<u32>();
          let mut dst32 = dst.transmute::<u32>();
 
@@ -48,6 +52,8 @@ pub unsafe fn memcpy<T: Sized>(dst: Ptr<T>, src: Ptr<T>, items: u32) -> Ptr<T> w
              count -= 1;
          }
 
+         *p = 2;
+
          len &= 3;
          if len == 0 {
              return dst;
@@ -72,16 +78,23 @@ pub unsafe fn memcpy<T: Sized>(dst: Ptr<T>, src: Ptr<T>, items: u32) -> Ptr<T> w
 
     count = len / 2;
 
+    *p = 4;
+
     while count != 0 {
         *dst16 = src8[0] as u16 | ((src8[1] as u16) << 8);
         dst16.offset(1);
         src8.offset(2);
         len -= 1;
+        count -= 1;
     }
+
+    *p = 5;
 
     if len & 1 != 0 {
         *dst16 = (*dst16 & !0xFF) | *src8 as u16;
     }
+
+    *p = 6;
 
     return dst
 }
